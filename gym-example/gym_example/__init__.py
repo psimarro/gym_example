@@ -9,3 +9,8 @@ register(
     id="fail-v1",
     entry_point="gym_example.envs:Fail_v1",
 )
+
+register(
+    id="kvazaar-v0",
+    entry_point="gym_example.envs:Kvazaar_v0",
+)

@@ -22,15 +22,15 @@ class Kvazaar_v0 (gym.Env):
         self.vid_path = kwargs.get("vid_path")
         self.nCores = kwargs.get("nCores")
         self.intervalos = kwargs.get("intervalos")
-
-        self.action_space = Discrete(self.nCores) #El espacio de acciones corresponde a los cores, de 0 a nCores-1
+        
+        self.action_space = Discrete(self.nCores)
+        #El espacio de acciones corresponde a los cores, de 0 a nCores-1
         #el espacio de observaciones es un rango de floats de 0 a 200
-        self.observation_space =  Dict({"intervalo" : Discrete(len(self.intervalos)),
-                                        "fps":         Box(low=0, high=200, shape=(), dtype=np.float32)})
+        self.observation_space = Box(low=np.array([0]), high=np.array([200]), dtype=np.float32)
         self.goal = 0 #no hay objetivo de momento
 
         self.seed() #generamos semilla de randoms
-        self.reset() #generamos la primera observacion
+        # self.reset() #generamos la primera observacion
     
     def reset(self):
         comando = [self.kvazaar_path, 
@@ -41,7 +41,8 @@ class Kvazaar_v0 (gym.Env):
                    "--threads=" + str(self.nCores)]
 
         # creamos subproceso de kvazaar
-        self.kvazaar = subprocess.Popen(comando, 
+        if self.kvazaar is None or self.kvazaar.poll():
+            self.kvazaar = subprocess.Popen(comando, 
                                         stdin=subprocess.PIPE, 
                                         stdout=subprocess.PIPE, 
                                         universal_newlines=True, bufsize=1, 
@@ -49,7 +50,8 @@ class Kvazaar_v0 (gym.Env):
         
         
         self.count = 0
-        self.state = {"intervalo": 0, "fps" :0} #el estado del entorno en un momento dado es el número de frames devueltos por kvazaar para un bloque 
+        # self.state = {"intervalo": 0, "fps" :0} #el estado del entorno en un momento dado es el número de frames devueltos por kvazaar para un bloque 
+        self.state = [0]
         self.reward = 0 #la recompensa inicial es 0
         self.done = False
         self.info = {"inicio"}
@@ -82,7 +84,7 @@ class Kvazaar_v0 (gym.Env):
     def calculate_reward(self):
         if self.info == {'END'}:
             self.reward = self.REWARD_NEGATIVE
-        elif self.state["fps"] < 24:
+        elif self.state[0] < 24:
             self.reward = self.REWARD_NEGATIVE
         else:
             self.reward = self.REWARD_POSITIVE
@@ -96,8 +98,9 @@ class Kvazaar_v0 (gym.Env):
         else:
             ## eliminamos la primera parte de la salida ("FPS:") y la guardamos en el nuevo estado
             output_value = np.float32(output[4:])
-            self.state["intervalo"] = bisect.bisect_left(self.intervalos, output_value)
-            self.state["fps"] = output_value
+            self.state = [output_value]
+            # self.state["intervalo"] = bisect.bisect_left(self.intervalos, output_value)
+            # self.state["fps"] = output_value
 
 
 
@@ -105,7 +108,7 @@ class Kvazaar_v0 (gym.Env):
         if self.info == {'END'}:
             print (self.info)
         else:
-            print((self.state["intervalo"], self.state["fps"]), self.reward)
+            print((self.state[0]), self.reward)
 
 
     def seed(self, seed=None):

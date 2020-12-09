@@ -54,18 +54,22 @@ class Kvazaar_v0 (gym.Env):
 
         # creamos subproceso de kvazaar
         
-        self.kvazaar = subprocess.Popen(comando, 
+        if self.kvazaar is None or self.kvazaar.poll() is not None:
+            self.kvazaar = subprocess.Popen(comando, 
                                         stdin=subprocess.PIPE, 
                                         stdout=subprocess.PIPE, 
                                         universal_newlines=True, bufsize=1, 
                                         env={'NUM_FRAMES_PER_BATCH': '24'})
     
     def step(self, action):
+        
+        # if self.done:
+        #     #self.reset_kvazaar()
+        #     pass
+        # else:
+
+        
         assert self.action_space.contains(action)
-        
-        if self.done:
-            self.reset_kvazaar()
-        
         action += 1 #ya que el espacio va de 0 a nCores-1
         
         # LLAMADA A KVAZAAR
@@ -75,9 +79,9 @@ class Kvazaar_v0 (gym.Env):
         ########
         
         self.calculate_state(output=output)
-       
+    
         self.info["estado"] = output.strip()
-        if self.info["estado"] == 'END':
+        if self.info["estado"] != 'END':
             self.count += 1
 
         try:

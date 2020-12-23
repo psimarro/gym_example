@@ -7,15 +7,14 @@ import bisect
 import time
 
 class Kvazaar_v0 (gym.Env):
-    
-    MAX_STEPS = 10
-    REWARD_POSITIVE = 1
-    REWARD_NEGATIVE = 0
+
+    REWARD_END = 0
 
     metadata = {
         "render.modes": ["human"]
     }
 
+    
 
     def __init__(self, **kwargs):
         self.kvazaar_path = kwargs.get("kvazaar_path")
@@ -24,8 +23,9 @@ class Kvazaar_v0 (gym.Env):
         
         self.action_space = Discrete(self.nCores)
         #El espacio de acciones corresponde a los cores, de 0 a nCores-1
-        #el espacio de observaciones es un rango de floats de 0 a 200
-        self.observation_space = Box(low=np.array([0]), high=np.array([200]), dtype=np.float32)
+        #el espacio de observaciones es un rango de floats de 0 a 20
+        #self.observation_space = Box(low=np.array([0]), high=np.array([50]), dtype=np.float32)
+        self.observation_space = Discrete(6)
         self.goal = 0 #no hay objetivo de momento
         self.kvazaar = None
 
@@ -35,10 +35,10 @@ class Kvazaar_v0 (gym.Env):
     def reset(self):
         self.reset_kvazaar()
         self.count = 0
-        self.state = [0]
+        self.state = np.int64(1)
         self.reward = 0 #la recompensa inicial es 0
         self.done = False
-        self.info = {"estado": "running", "intervalo": 0}
+        self.info = {"estado": "running", "fps": 0}
         return self.state
 
     def reset_kvazaar(self):
@@ -88,8 +88,18 @@ class Kvazaar_v0 (gym.Env):
     
     def calculate_reward(self):
         if self.info["estado"] == 'END':
-            self.reward = self.REWARD_POSITIVE
-        else: self.reward = 0 if(self.state[0] < 24) else 1
+            self.reward = self.REWARD_END
+        else: 
+            # if self.state[0] <= 30: self.reward = self.state[0]*(1/3) # F(x) = 1/3*x si state <= 30 (max = f(30) = 10)
+            # else: self.reward = -0.5*self.state[0] + 25 # F(x) = -(1/2)x + 25 (min = f(50) = 0)
+            map_rewards = {
+                1: 0,
+                2: 10,
+                3: 0,
+                4: 0,
+                5: 0,    
+            }
+            self.reward = map_rewards.get(self.state)
 
         return self.reward
 
@@ -100,8 +110,15 @@ class Kvazaar_v0 (gym.Env):
         else:
             ## eliminamos la primera parte de la salida ("FPS:") y la guardamos en el nuevo estado
             output_value = np.float32(output[4:])
-            self.info["intervalo"] = 0 if (output_value < 24) else 1
-            self.state = [output_value]
+            #self.info["intervalo"] = 0 if (output_value < 24) else 1
+            # self.state = [output_value] if output_value < 50 else [50]
+            self.info["fps"] = '{:.2f}'.format(output_value)
+            if output_value < 20: self.state = np.int64(1)
+            elif output_value < 45: self.state = np.int64(2)
+            elif output_value < 100: self.state = np.int64(3)
+            elif output_value < 150: self.state = np.int64(4)
+            else: output_value: self.state = np.int64(5)
+
 
 
 
@@ -109,7 +126,8 @@ class Kvazaar_v0 (gym.Env):
         if self.info["estado"] == 'END':
             print (self.info["estado"])
         else:
-            l = '{:>7.1f}  box:{:>1}  reward:{:<10}'.format(self.state[0], self.info["intervalo"], self.reward)
+            #l = '{:>7.1f}  box:{:>1}  reward:{:<10.3f}'.format(self.state[0], self.info["intervalo"], self.reward)
+            l = '{:>7}  fps:{:>1}  reward:{:<10}'.format(self.state, self.info["fps"], self.reward)
             print(l)
 
     def seed(self, seed=None):

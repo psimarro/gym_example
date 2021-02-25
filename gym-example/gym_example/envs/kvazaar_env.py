@@ -5,6 +5,8 @@ import numpy as np
 import subprocess
 import bisect
 import time
+import os
+
 
 class Kvazaar_v0 (gym.Env):
 
@@ -15,10 +17,12 @@ class Kvazaar_v0 (gym.Env):
     }
 
     
-
     def __init__(self, **kwargs):
+        #Recogemos los argumentos:
+        # kvazaar_path: ruta donde está instalado kvazaar
+        # vid_path:
         self.kvazaar_path = kwargs.get("kvazaar_path")
-        self.vid_path = kwargs.get("vid_path")
+        self.vids_path = kwargs.get("vids_path")
         self.nCores = kwargs.get("nCores")
         
         self.action_space = Discrete(self.nCores)
@@ -33,6 +37,10 @@ class Kvazaar_v0 (gym.Env):
         # self.reset() #generamos la primera observacion
     
     def reset(self):
+        self.seed()
+        self.directorio = os.listdir(self.vids_path)
+        print(self.vids_path)
+        print(self.directorio)
         self.reset_kvazaar()
         self.count = 0
         self.state = np.int64(1)
@@ -42,8 +50,13 @@ class Kvazaar_v0 (gym.Env):
         return self.state
 
     def reset_kvazaar(self):
+        randomInt = self.np_random.randint(len(self.directorio))
+        print(randomInt)
+        new_video = str(self.vids_path + self.directorio[randomInt])
+        print("New video selected: " + new_video)
+
         comando = [self.kvazaar_path, 
-                   "--input", self.vid_path, 
+                   "--input", new_video, 
                    "--output", "/dev/null", 
                    "--preset=ultrafast", 
                    "--qp=22", "--owf=0", 

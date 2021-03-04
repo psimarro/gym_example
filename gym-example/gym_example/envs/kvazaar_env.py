@@ -48,7 +48,7 @@ class Kvazaar_v0 (gym.Env):
         return self.state
 
     def reset_kvazaar(self):
-        randomInt = self.np_random.randint[len(self.directorio)]
+        randomInt = self.np_random.randint(0, len(self.directorio))
         new_video = str(self.vids_path + self.directorio[randomInt])
         print("New video selected: " + new_video)
 

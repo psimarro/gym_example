@@ -27,14 +27,9 @@ class Kvazaar_v0 (gym.Env):
         
         self.action_space = Discrete(self.nCores)
         #El espacio de acciones corresponde a los cores, de 0 a nCores-1
-<<<<<<< HEAD
         #el espacio de observaciones es un rango de floats de 0 a 20
         #self.observation_space = Box(low=np.array([0]), high=np.array([50]), dtype=np.float32)
         self.observation_space = Discrete(9)
-=======
-        #el espacio de observaciones es un espacio discreto
-        self.observation_space = Discrete(6)
->>>>>>> 63ec76e76843fc7e85d838e900a0c1afa6683df0
         self.goal = 0 #no hay objetivo de momento
         self.kvazaar = None
 

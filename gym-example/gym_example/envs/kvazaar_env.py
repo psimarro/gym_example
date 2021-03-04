@@ -18,26 +18,29 @@ class Kvazaar_v0 (gym.Env):
 
     
     def __init__(self, **kwargs):
-        #Recogemos los argumentos:
+        # Recogemos los argumentos:
         # kvazaar_path: ruta donde está instalado kvazaar
-        # vid_path:
+        # vid_path: 
         self.kvazaar_path = kwargs.get("kvazaar_path")
         self.vids_path = kwargs.get("vids_path")
         self.nCores = kwargs.get("nCores")
         
         self.action_space = Discrete(self.nCores)
         #El espacio de acciones corresponde a los cores, de 0 a nCores-1
+<<<<<<< HEAD
         #el espacio de observaciones es un rango de floats de 0 a 20
         #self.observation_space = Box(low=np.array([0]), high=np.array([50]), dtype=np.float32)
         self.observation_space = Discrete(9)
+=======
+        #el espacio de observaciones es un espacio discreto
+        self.observation_space = Discrete(6)
+>>>>>>> 63ec76e76843fc7e85d838e900a0c1afa6683df0
         self.goal = 0 #no hay objetivo de momento
         self.kvazaar = None
 
-        self.seed() #generamos semilla de randoms
-        # self.reset() #generamos la primera observacion
     
     def reset(self):
-        self.seed()
+        self.seed() #generamos semilla de randoms
         self.directorio = os.listdir(self.vids_path)
         print(self.vids_path)
         print(self.directorio)
@@ -50,8 +53,7 @@ class Kvazaar_v0 (gym.Env):
         return self.state
 
     def reset_kvazaar(self):
-        randomInt = self.np_random.randint(len(self.directorio))
-        print(randomInt)
+        randomInt = self.np_random.randint[len(self.directorio)]
         new_video = str(self.vids_path + self.directorio[randomInt])
         print("New video selected: " + new_video)
 
@@ -124,8 +126,7 @@ class Kvazaar_v0 (gym.Env):
         else:
             ## eliminamos la primera parte de la salida ("FPS:") y la guardamos en el nuevo estado
             output_value = np.float32(output[4:])
-            #self.info["intervalo"] = 0 if (output_value < 24) else 1
-            # self.state = [output_value] if output_value < 50 else [50]
+            
             self.info["fps"] = '{:.2f}'.format(output_value)
             if output_value < 30: self.state = np.int64(1)
             elif output_value < 32: self.state = np.int(2)
@@ -143,7 +144,6 @@ class Kvazaar_v0 (gym.Env):
         if self.info["estado"] == 'END':
             print (self.info["estado"])
         else:
-            #l = '{:>7.1f}  box:{:>1}  reward:{:<10.3f}'.format(self.state[0], self.info["intervalo"], self.reward)
             l = '{:>7}  fps:{:>1}  reward:{:<10}'.format(self.state, self.info["fps"], self.reward)
             print(l)
 

@@ -29,7 +29,7 @@ class Kvazaar_v0 (gym.Env):
         #El espacio de acciones corresponde a los cores, de 0 a nCores-1
         #el espacio de observaciones es un rango de floats de 0 a 20
         #self.observation_space = Box(low=np.array([0]), high=np.array([50]), dtype=np.float32)
-        self.observation_space = Discrete(6)
+        self.observation_space = Discrete(9)
         self.goal = 0 #no hay objetivo de momento
         self.kvazaar = None
 
@@ -103,14 +103,15 @@ class Kvazaar_v0 (gym.Env):
         if self.info["estado"] == 'END':
             self.reward = self.REWARD_END
         else: 
-            # if self.state[0] <= 30: self.reward = self.state[0]*(1/3) # F(x) = 1/3*x si state <= 30 (max = f(30) = 10)
-            # else: self.reward = -0.5*self.state[0] + 25 # F(x) = -(1/2)x + 25 (min = f(50) = 0)
             map_rewards = {
                 1: 0,
-                2: 10,
-                3: 0,
-                4: 0,
-                5: 0,    
+                2: 6,
+                3: 10,
+                4: 4,
+                5: 3,
+                6: 1,
+                7: 1,  
+                8: 1
             }
             self.reward = map_rewards.get(self.state)
 
@@ -126,11 +127,14 @@ class Kvazaar_v0 (gym.Env):
             #self.info["intervalo"] = 0 if (output_value < 24) else 1
             # self.state = [output_value] if output_value < 50 else [50]
             self.info["fps"] = '{:.2f}'.format(output_value)
-            if output_value < 20: self.state = np.int64(1)
-            elif output_value < 45: self.state = np.int64(2)
-            elif output_value < 100: self.state = np.int64(3)
-            elif output_value < 150: self.state = np.int64(4)
-            else: output_value: self.state = np.int64(5)
+            if output_value < 30: self.state = np.int64(1)
+            elif output_value < 32: self.state = np.int(2)
+            elif output_value < 35: self.state = np.int(3)
+            elif output_value < 40: self.state = np.int(4)
+            elif output_value < 45: self.state = np.int64(5)
+            elif output_value < 100: self.state = np.int64(6)
+            elif output_value < 150: self.state = np.int64(7)
+            else: output_value: self.state = np.int64(8)
 
 
 

@@ -1,12 +1,13 @@
 import gym
 from gym.utils import seeding
-from gym.spaces import Dict, Box, Discrete, MultiDiscrete
+from gym.spaces import Discrete
 import numpy as np
+import psutil
 import subprocess
 import bisect
 import time
 import os
-
+import multiprocessing
 
 class Kvazaar_v0 (gym.Env):
 
@@ -20,25 +21,20 @@ class Kvazaar_v0 (gym.Env):
     def __init__(self, **kwargs):
         # Recogemos los argumentos:
         # kvazaar_path: ruta donde está instalado kvazaar
-        # vid_path: 
+        # vids_path: ruta de los vídeos que utilizará el entorno
+        # cores: lista de cores para kvazaar
         self.kvazaar_path = kwargs.get("kvazaar_path")
         self.vids_path = kwargs.get("vids_path")
-        self.nCores = kwargs.get("nCores")
+        self.cores = kwargs.get("cores") #Lista de los cores que utiliza el entorno
         
-        self.action_space = Discrete(self.nCores)
-        #El espacio de acciones corresponde a los cores, de 0 a nCores-1
-        #el espacio de observaciones es un rango de floats de 0 a 20
-        #self.observation_space = Box(low=np.array([0]), high=np.array([50]), dtype=np.float32)
+        self.action_space = Discrete(len(self.cores))
         self.observation_space = Discrete(11)
-        self.goal = 0 #no hay objetivo de momento
         self.kvazaar = None
 
     
     def reset(self):
         self.seed() #generamos semilla de randoms
-        self.directorio = os.listdir(self.vids_path)
-        print(self.vids_path)
-        print(self.directorio)
+        self.directorio = os.listdir(self.vids_path) 
         self.reset_kvazaar()
         self.count = 0
         self.state = np.int64(1)
@@ -57,10 +53,14 @@ class Kvazaar_v0 (gym.Env):
                    "--output", "/dev/null", 
                    "--preset=ultrafast", 
                    "--qp=22", "--owf=0", 
-                   "--threads=" + str(self.nCores)]
-
+                   "--threads=" + str(len(self.cores))]
+        
+        #aplicamos taskset usando la segunda mitad de cores para kvazaar
+        comando = ["taskset","-c",",".join([str(x) for x in self.cores])] + comando
+        
         # creamos subproceso de kvazaar
         
+
         self.kvazaar = subprocess.Popen(comando, 
                                         stdin=subprocess.PIPE, 
                                         stdout=subprocess.PIPE, 
@@ -86,9 +86,7 @@ class Kvazaar_v0 (gym.Env):
         self.calculate_state(output=output)
     
         self.info["estado"] = output.strip()
-        if self.info["estado"] != 'END':
-            self.count += 1
-
+        
         try:
             assert self.observation_space.contains(self.state) #comprabamos que el nuevo estado es válido
         except AssertionError:
@@ -101,15 +99,15 @@ class Kvazaar_v0 (gym.Env):
             self.reward = self.REWARD_END
         else: 
             map_rewards = {
-                1: 0,
-                2: 2,
-                3: 4,
-                4: 5,
-                5: 6,
-                6: 8,
-                7: 10,  
-                8: 8,
-                9: 4
+                1: 0, ##[0,10)
+                2: 1, ##[10,16)
+                3: 2, ##[16,24)
+                4: 3, ##[20,24)
+                5: 6, ##[24,27)
+                6: 8, ##[27,30)
+                7: 10,  ##[30,35)
+                8: 7, # [35,40)
+                9: 4 # [40,inf)
             }
             self.reward = map_rewards.get(self.state)
 
@@ -131,8 +129,8 @@ class Kvazaar_v0 (gym.Env):
             elif output_value < 27: self.state = np.int64(5)
             elif output_value < 30: self.state = np.int64(6)
             elif output_value < 35: self.state = np.int64(7)
-            elif output_value < 40: self.state = np.int64(7) 
-            else: output_value: self.state = np.int64(8)
+            elif output_value < 40: self.state = np.int64(8) 
+            else: self.state = np.int64(9)
 
 
 
@@ -149,4 +147,4 @@ class Kvazaar_v0 (gym.Env):
         return [seed]
         
     def close(self):
-       self.kvazaar.kill()
+       if(self.kvazaar): self.kvazaar.kill()
